@@ -238,6 +238,7 @@ contrasts <- makeContrasts(
    HOvHC = HO - HC,
    HPvHC = HP - HC,
    HPvHO = HP - HO,
+   HPvLC = HP - LC,
    levels = colnames(design))
 rownames(contrasts) <- gsub("group", "", rownames(contrasts))
 contrasts
@@ -287,10 +288,11 @@ summary(dt1)
 
 vennDiagram(dt1[,1:2], circle.col=c("turquoise", "salmon"))
 
+vennDiagram(dt1[,5:7], circle.col=c("green", "red", "blue"))
 
 vennDiagram(dt1[,c(9,5,8)], circle.col=c("green", "red", "blue"))
 
-
+vennDiagram(dt1[,c(14,2,4)], circle.col=c("green", "red", "blue"))
 
 
 ```
@@ -298,49 +300,38 @@ vennDiagram(dt1[,c(9,5,8)], circle.col=c("green", "red", "blue"))
 ```{R, Volcano plots!}
 
 OvC <- topTreat(tfit1, coef=1, n=Inf)
-HFvC <- topTreat(tfit1, coef=2, n=Inf)
-LFvC <- topTreat(tfit1, coef=3, n=Inf)
-PvO <- topTreat(tfit1, coef=4, n=Inf)
+PvC <- topTreat(tfit1, coef=2, n=Inf)
+PvO <- topTreat(tfit1, coef=3, n=Inf)
+HvL <- topTreat(tfit1, coef=4, n=Inf)
+HPvLC <- topTreat(tfit1, coef=14, n =Inf)
 
 # Almost exactly the same just all in one place and made to look better 
 
-EnhancedVolcano(HFvLF,
-    lab = HFvLF$ID,
+EnhancedVolcano(OvC,
+    lab = OvC$ID,
     x = 'logFC',
     y = 'adj.P.Val',
     legendPosition = "right",
     legendLabSize = 12,
     legendIconSize = 3,
     labSize = 3,
-    subtitle = "HF vs LF",
+    subtitle = "OPLA vs Control",
     pCutoff = 0.05, 
     FCcutoff = 0.2)
 
 
-EnhancedVolcano(HFvC,
-    lab = HFvC$ID,
+EnhancedVolcano(PvC,
+    lab = PvC$ID,
     x = 'logFC',
     y = 'adj.P.Val',
     legendPosition = "right",
     legendLabSize = 12,
     legendIconSize = 3,
     labSize = 3,
-    subtitle = "HF vs C",
+    subtitle = "POLA vs Control",
     pCutoff = 0.05, 
     FCcutoff = 0.2)
 
-
-EnhancedVolcano(LFvC,
-    lab = LFvC$ID,
-    x = 'logFC',
-    y = 'adj.P.Val',
-    legendPosition = "right",
-    legendLabSize = 12,
-    legendIconSize = 3,
-    labSize = 3,
-    subtitle = "LF vs C",
-    pCutoff = 0.05, 
-    FCcutoff = 0.2)
 
 EnhancedVolcano(PvO,
     lab = PvO$ID,
@@ -354,8 +345,20 @@ EnhancedVolcano(PvO,
     pCutoff = 0.05, 
     FCcutoff = 0.2)
 
+EnhancedVolcano(HvL,
+    lab = HvL$ID,
+    x = 'logFC',
+    y = 'adj.P.Val',
+    legendPosition = "right",
+    legendLabSize = 12,
+    legendIconSize = 3,
+    labSize = 3,
+    subtitle = "High Insulin vs Low Insulin",
+    pCutoff = 0.05, 
+    FCcutoff = 0.2)
+
 #Interactive volcano plot for HF v LF (change the columns of the data frames to make it for other comparisons)
-glXYPlot(x=efit1$coef[,4], y=efit1$lods[,4], xlab="logFC", ylab="logP", status=dt1[,4], counts=log2.cpm.filtered.norm, groups=group, launch = TRUE, sample.cols=group)
+glXYPlot(x=efit1$coef[,3], y=efit1$lods[,3], xlab="logFC", ylab="logP", status=dt1[,3], counts=log2.cpm.filtered.norm, groups=group, launch = TRUE, sample.cols=group)
 
 #glimmaVolcano(tfit1, coef = 1, status = dt1, main=colnames(tfit1)[1], side.main="ID", counts=log2.cpm.filtered.norm, transform = "none", groups=group, launch=TRUE)
 
@@ -377,13 +380,13 @@ datatable(dt1,
 
 # Pivot to tidy up data
 Avg.gene_expression.pivot <- pivot_longer(Avg.gene_expression, 
-                          cols = Control : POLA800, 
+                          cols = LC : HP, 
                           names_to = "group", 
                           values_to = "lcpm")
 
 #  Filter for genes you want. grepl will pick out any with that phrase in it. Use " x|y|z|etc." notation to search for multiple genes. 
 graph <- Avg.gene_expression.pivot %>%
-  dplyr::filter(grepl('SERPINA1', geneID))
+  dplyr::filter(grepl('MAPK8|MAPK9', geneID))
 
 # Graph error bars were a step too far for me as they got messed up with the facet wrap
 ggbarplot(graph, "group", "lcpm", add = "mean_se", palette = "npg", legend = "none", fill = "group", xlab = "Media", ylab = "counts per million (log2)") +
@@ -415,21 +418,21 @@ heatmap.2(selected_genes, scale="row",
 ```
 
 
-```{R, HFvLF Functional enrichment analysis}
+```{R, OvC Functional enrichment analysis}
 
-diffGenes.HFvLF <- rownames(filter(dt1, dt1$HFvLF != 0))
+diffGenes.OvC <- rownames(filter(dt1, dt1$OvC != 0))
 
-diffGenes.HFvLF <- HFvLF[HFvLF$ID %in% diffGenes.HFvLF, ] %>%
+diffGenes.OvC <- OvC[OvC$ID %in% diffGenes.OvC, ] %>%
 rename("SYMBOL" = ID)
 
-diffGenes.HFvLF <- diffGenes.HFvLF %>% 
+diffGenes.OvC <- diffGenes.OvC %>% 
     dplyr::select(SYMBOL, t) %>% 
     na.omit() %>% 
     distinct() %>% 
     group_by(SYMBOL) %>% 
     summarize(stat=mean(t))
 
-ranks <- deframe(diffGenes.HFvLF)
+ranks <- deframe(diffGenes.OvC)
 
 # Load the pathways into a named list
 pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
@@ -454,61 +457,61 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
   theme_minimal()
 
 #KEGG
-diffGenes.HFvLF <- rownames(filter(dt1, dt1$HFvLF != 0))
+diffGenes.OvC <- rownames(filter(dt1, dt1$OvC != 0))
 
-diffGenes.HFvLF <- HFvLF[HFvLF$ID %in% diffGenes.HFvLF, ] %>%
+diffGenes.OvC <- OvC[OvC$ID %in% diffGenes.OvC, ] %>%
 rename("SYMBOL" = ID)
 
-entrez <- bitr(diffGenes.HFvLF$SYMBOL, fromType = "SYMBOL",
+entrez <- bitr(diffGenes.OvC$SYMBOL, fromType = "SYMBOL",
                  toType = "ENTREZID",
                  OrgDb="org.Hs.eg.db")
 
-deg_HFvLF_enrich <- diffGenes.HFvLF %>% left_join(entrez,.,by="SYMBOL")
+deg_OvC_enrich <- diffGenes.OvC %>% left_join(entrez,.,by="SYMBOL")
 
-HFvLF_kegg_gene_list <- deg_HFvLF_enrich$logFC
+OvC_kegg_gene_list <- deg_OvC_enrich$logFC
 
-names(HFvLF_kegg_gene_list) <- deg_HFvLF_enrich$ENTREZID
+names(OvC_kegg_gene_list) <- deg_OvC_enrich$ENTREZID
 
-HFvLF_kegg_gene_list<-na.omit(HFvLF_kegg_gene_list)
+OvC_kegg_gene_list<-na.omit(OvC_kegg_gene_list)
 
-HFvLF_kegg_gene_list = sort(HFvLF_kegg_gene_list, decreasing = TRUE)
+OvC_kegg_gene_list = sort(OvC_kegg_gene_list, decreasing = TRUE)
 
-HFvLF_kk <- gseKEGG(geneList     = HFvLF_kegg_gene_list,
+OvC_kk <- gseKEGG(geneList     = OvC_kegg_gene_list,
                organism     = "hsa")
 
-dotplot(HFvLF_kk, showCategory = 5, title = "HFvLF Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
- # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/HFvLF GSEA.png")
+dotplot(OvC_kk, showCategory = 5, title = "OvC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
+ # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/OvC GSEA.png")
 
 ```
 
 
-``` {R HFvLF pathway enrichment, warning=FALSE}
-setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/Pathview")
+``` {R OvC pathway enrichment, warning=FALSE}
+setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
 
 #This is the same as before
-fc.vector <- as.numeric(deg_HFvLF_enrich[, 3])
-names(fc.vector) <- (deg_HFvLF_enrich[, 2])
+fc.vector <- as.numeric(deg_OvC_enrich[, 3])
+names(fc.vector) <- (deg_OvC_enrich[, 2])
 de.names <- names(fc.vector) 
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04140",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04932",species  = "hsa")
 
 ```
 
-``` {R LFvC function enrichment analysis}
+``` {R PvC function enrichment analysis}
 #MSigDb Hallmarks
-diffGenes.LFvC <- rownames(filter(dt1, dt1$LFvC != 0))
+diffGenes.PvC <- rownames(filter(dt1, dt1$PvC != 0))
 
-diffGenes.LFvC <- LFvC[LFvC$ID %in% diffGenes.LFvC, ] %>%
+diffGenes.PvC <- PvC[PvC$ID %in% diffGenes.PvC, ] %>%
 rename("SYMBOL" = ID)
 
-diffGenes.LFvC <- diffGenes.LFvC %>% 
+diffGenes.PvC <- diffGenes.PvC %>% 
     dplyr::select(SYMBOL, t) %>% 
     na.omit() %>% 
     distinct() %>% 
     group_by(SYMBOL) %>% 
     summarize(stat=mean(t))
 
-ranks <- deframe(diffGenes.LFvC)
+ranks <- deframe(diffGenes.PvC)
 
 pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
 
@@ -531,39 +534,39 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
   theme_minimal()
 
 #Kegg
-diffGenes.LFvC <- rownames(filter(dt1, dt1$LFvC != 0))
+diffGenes.PvC <- rownames(filter(dt1, dt1$PvC != 0))
 
-diffGenes.LFvC <- LFvC[LFvC$ID %in% diffGenes.LFvC, ] %>%
+diffGenes.PvC <- PvC[PvC$ID %in% diffGenes.PvC, ] %>%
 rename("SYMBOL" = ID)
 
-entrez <- bitr(diffGenes.LFvC$SYMBOL, fromType = "SYMBOL",
+entrez <- bitr(diffGenes.PvC$SYMBOL, fromType = "SYMBOL",
                  toType = "ENTREZID",
                  OrgDb="org.Hs.eg.db")
 
-deg_LFvC_enrich <- diffGenes.LFvC %>% left_join(entrez,.,by="SYMBOL")
+deg_PvC_enrich <- diffGenes.PvC %>% left_join(entrez,.,by="SYMBOL")
 
-LFvC_kegg_gene_list <- deg_LFvC_enrich$logFC
+PvC_kegg_gene_list <- deg_PvC_enrich$logFC
 
-names(LFvC_kegg_gene_list) <- deg_LFvC_enrich$ENTREZID
+names(PvC_kegg_gene_list) <- deg_PvC_enrich$ENTREZID
 
-LFvC_kegg_gene_list<-na.omit(LFvC_kegg_gene_list)
+PvC_kegg_gene_list<-na.omit(PvC_kegg_gene_list)
 
-LFvC_kegg_gene_list = sort(LFvC_kegg_gene_list, decreasing = TRUE)
+PvC_kegg_gene_list = sort(PvC_kegg_gene_list, decreasing = TRUE)
 
-LFvC_kk <- gseKEGG(geneList     = LFvC_kegg_gene_list,
+PvC_kk <- gseKEGG(geneList     = PvC_kegg_gene_list,
                organism     = "hsa")
 
-dotplot(LFvC_kk, showCategory = 5, title = "LFvC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
- # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/LFvC GSEA.png")
+dotplot(PvC_kk, showCategory = 5, title = "PvC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
+ # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/PvC GSEA.png")
 ```
 
 
-``` {R LFvC pathway enrichment, warning=FALSE}
-setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/Pathview")
+``` {R PvC pathway enrichment, warning=FALSE}
+setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
 
 #This is the same as before
-fc.vector <- as.numeric(deg_LFvC_enrich[, 3])
-names(fc.vector) <- (deg_LFvC_enrich[, 2])
+fc.vector <- as.numeric(deg_PvC_enrich[, 3])
+names(fc.vector) <- (deg_PvC_enrich[, 2])
 de.names <- names(fc.vector)
 
 pathview(gene.data  = fc.vector, pathway.id = "hsa04932",species  = "hsa")
@@ -571,21 +574,21 @@ pathview(gene.data  = fc.vector, pathway.id = "hsa04932",species  = "hsa")
 ```
 
 
-``` {R HFvC function enrichment analysis}
+``` {R HPvLC function enrichment analysis}
 #MSigDb Hallmarks
-diffGenes.HFvC <- rownames(filter(dt1, dt1$HFvC != 0))
+diffGenes.HPvLC <- rownames(filter(dt1, dt1$HPvLC != 0))
 
-diffGenes.HFvC <- HFvC[HFvC$ID %in% diffGenes.HFvC, ] %>%
+diffGenes.HPvLC <- HPvLC[HPvLC$ID %in% diffGenes.HPvLC, ] %>%
 rename("SYMBOL" = ID)
 
-diffGenes.HFvC <- diffGenes.HFvC %>% 
+diffGenes.HPvLC <- diffGenes.HPvLC %>% 
     dplyr::select(SYMBOL, t) %>% 
     na.omit() %>% 
     distinct() %>% 
     group_by(SYMBOL) %>% 
     summarize(stat=mean(t))
 
-ranks <- deframe(diffGenes.HFvC)
+ranks <- deframe(diffGenes.HPvLC)
 
 # Load the pathways into a named list
 pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
@@ -610,42 +613,42 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
   theme_minimal()
 
 #Kegg
-diffGenes.HFvC <- rownames(filter(dt1, dt1$HFvC != 0))
+diffGenes.HPvLC <- rownames(filter(dt1, dt1$HPvLC != 0))
 
-diffGenes.HFvC <- HFvC[HFvC$ID %in% diffGenes.HFvC, ] %>%
+diffGenes.HPvLC <- HPvLC[HPvLC$ID %in% diffGenes.HPvLC, ] %>%
 rename("SYMBOL" = ID)
 
-entrez <- bitr(diffGenes.HFvC$SYMBOL, fromType = "SYMBOL",
+entrez <- bitr(diffGenes.HPvLC$SYMBOL, fromType = "SYMBOL",
                  toType = "ENTREZID",
                  OrgDb="org.Hs.eg.db")
 
-deg_HFvC_enrich <- diffGenes.HFvC %>% left_join(entrez,.,by="SYMBOL")
+deg_HPvLC_enrich <- diffGenes.HPvLC %>% left_join(entrez,.,by="SYMBOL")
 
-HFvC_kegg_gene_list <- deg_HFvC_enrich$logFC
+HPvLC_kegg_gene_list <- deg_HPvLC_enrich$logFC
 
-names(HFvC_kegg_gene_list) <- deg_HFvC_enrich$ENTREZID
+names(HPvLC_kegg_gene_list) <- deg_HPvLC_enrich$ENTREZID
 
-HFvC_kegg_gene_list<-na.omit(HFvC_kegg_gene_list)
+HPvLC_kegg_gene_list<-na.omit(HPvLC_kegg_gene_list)
 
-HFvC_kegg_gene_list = sort(HFvC_kegg_gene_list, decreasing = TRUE)
+HPvLC_kegg_gene_list = sort(HPvLC_kegg_gene_list, decreasing = TRUE)
 
-HFvC_kk <- gseKEGG(geneList     = HFvC_kegg_gene_list,
+HPvLC_kk <- gseKEGG(geneList     = HPvLC_kegg_gene_list,
                organism     = "hsa")
 
-dotplot(HFvC_kk, showCategory = 5, title = "HFvC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
- # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/HFvC GSEA.png")
+dotplot(HPvLC_kk, showCategory = 5, title = "HPvLC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
+ # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/HPvLC GSEA.png")
 ```
 
 
-``` {R HFvC pathway enrichment, warning=FALSE}
-setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/Pathview")
+``` {R HPvLC pathway enrichment, warning=FALSE}
+setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
 
 #This is the same as before
-fc.vector <- as.numeric(deg_HFvC_enrich[, 3])
-names(fc.vector) <- (deg_HFvC_enrich[, 2])
+fc.vector <- as.numeric(deg_HPvLC_enrich[, 3])
+names(fc.vector) <- (deg_HPvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04610",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04932",species  = "hsa")
 
 ```
 
@@ -716,13 +719,13 @@ dotplot(PvO_kk, showCategory = 10, title = "PvO Enriched Pathways vs Control" , 
 
 
 ``` {R PvO pathway enrichment, warning=FALSE}
-setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/Pathview")
+setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
 
 #This is the same as before
 fc.vector <- as.numeric(deg_PvO_enrich[, 3])
 names(fc.vector) <- (deg_PvO_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04024",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04932",species  = "hsa")
 
 ```
