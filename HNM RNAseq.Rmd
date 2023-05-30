@@ -830,7 +830,7 @@ fc.vector <- as.numeric(deg_LOvLC_enrich[, 3])
 names(fc.vector) <- (deg_LOvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa00121",species  = "hsa")
 
 ```
 
@@ -913,7 +913,7 @@ fc.vector <- as.numeric(deg_LPvLC_enrich[, 3])
 names(fc.vector) <- (deg_LPvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa00140",species  = "hsa")
 
 ```
 
