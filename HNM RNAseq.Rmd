@@ -174,7 +174,7 @@ fviz_pca_ind(pca.res, geom.ind = "point", pointshape = 21,
              legend.title = "Group", title = "Principle Components Analysis") +
   theme_prism(base_size = 14)
 
-#ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Outputs/Transfer-report/Figures/PCA.png")
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/PCA.png")
 
 ```
 
@@ -210,6 +210,7 @@ theme(axis.text.x = element_text(color = "black", size = 8, angle = 0, hjust = .
       axis.text.y = element_text(color = "black", size = 8, angle = 0, hjust = .5, vjust = .5, face = "plain"),
       axis.title.x = element_text(color = "black", size = 12, angle = 0, hjust = .5, vjust = .5, face = "plain"),
       axis.title.y = element_text(color = "black", size = 12, angle = 90, hjust = .5, vjust = .5, face = "plain"))
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/PCA SM.png")
 
 ```
 
@@ -289,11 +290,17 @@ summary(dt1)
 
 vennDiagram(dt1[,1:2], circle.col=c("turquoise", "salmon"))
 
+png(filename = "C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/Venn1.png", width = 800, height = 400, units = "px", pointsize = 17, bg = "white")
 vennDiagram(dt1[,5:7], circle.col=c("green", "red", "blue"))
+dev.off()
 
+png(filename = "C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/Venn2.png", width = 800, height = 400, units = "px", pointsize = 17, bg = "white")
 vennDiagram(dt1[,c(9,5,8)], circle.col=c("green", "red", "blue"))
+dev.off()
 
+png(filename = "C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/Venn3.png", width = 800, height = 400, units = "px", pointsize = 17, bg = "white")
 vennDiagram(dt1[,c(3,10,13)], circle.col=c("green", "red", "blue"))
+dev.off()
 
 vennDiagram(dt1[,c(8,9,11,12)], circle.col=c("green", "red", "blue", "orange"))
 
@@ -308,8 +315,10 @@ HvL <- topTreat(tfit1, coef=4, n=Inf)
 HCvLC <- topTreat(tfit1, coef=5, n=Inf)
 LOvLC <- topTreat(tfit1, coef=8, n=Inf)
 LPvLC <- topTreat(tfit1, coef=9, n=Inf)
+LPvLO <- topTreat(tfit1, coef=10, n=Inf)
 HOvHC <- topTreat(tfit1, coef=11, n=Inf)
 HPvHC <- topTreat(tfit1, coef=12, n=Inf)
+HPvHO <- topTreat(tfit1, coef=13, n=Inf)
 HOvLC <- topTreat(tfit1, coef=14, n=Inf)
 HPvLC <- topTreat(tfit1, coef=15, n=Inf)
 
@@ -353,6 +362,7 @@ EnhancedVolcano(PvO,
     subtitle = "POLA vs OPLA",
     pCutoff = 0.05, 
     FCcutoff = 0.2)
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/PvO Volcano.png")
 
 EnhancedVolcano(HvL,
     lab = HvL$ID,
@@ -365,6 +375,7 @@ EnhancedVolcano(HvL,
     subtitle = "High Insulin vs Low Insulin",
     pCutoff = 0.05, 
     FCcutoff = 0.2)
+
 
 #Interactive volcano plot for HF v LF (change the columns of the data frames to make it for other comparisons)
 glXYPlot(x=efit1$coef[,3], y=efit1$lods[,3], xlab="logFC", ylab="logP", status=dt1[,3], counts=log2.cpm.filtered.norm, groups=group, launch = TRUE, sample.cols=group)
@@ -415,14 +426,14 @@ dplyr::filter(grepl('ATG10|ATG14|ATG16L1|ATG3|ATG4|ATG7|ATG9A|BCL2|GABARAP|GABAR
  column_to_rownames(var="geneID") %>%
   as.matrix
 
-#png(filename = "C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/ATG heatmap.png", width = 800, height = 800, units = "px", pointsize = 17, bg = "white")
+png(filename = "C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/ATG heatmap.png", width = 800, height = 800, units = "px", pointsize = 17, bg = "white")
 
-#heatmap.2(selected_genes, scale="row",
- # labRow=rownames(selected_genes), labCol=colnames(selected_genes),
-  # trace="none", density.info="none", 
-   # margin=c(10,20), lhei=c(2,10), dendrogram="column")
+heatmap.2(selected_genes, scale="row",
+  labRow=rownames(selected_genes), labCol=colnames(selected_genes),
+   trace="none", density.info="none", 
+    margin=c(10,20), lhei=c(2,10), dendrogram="column")
 
-#dev.off()
+dev.off()
 
 ```
 
@@ -498,7 +509,6 @@ edox <- setReadable(OvC_kk, 'org.Hs.eg.db', 'ENTREZID')
 cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=OvC_kegg_gene_list)
 
 ```
-
 
 ``` {R OvC pathway enrichment, warning=FALSE}
 setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
@@ -589,10 +599,9 @@ fc.vector <- as.numeric(deg_PvC_enrich[, 3])
 names(fc.vector) <- (deg_PvC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04932",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
-
 
 ``` {R PvO function enrichment analysis}
 #MSigDb
@@ -660,7 +669,6 @@ PvO_kk <- gseKEGG(geneList     = PvO_kegg_gene_list,
 
 ```
 
-
 ``` {R PvO pathway enrichment, warning=FALSE}
 setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
 
@@ -669,10 +677,9 @@ fc.vector <- as.numeric(deg_PvO_enrich[, 3])
 names(fc.vector) <- (deg_PvO_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04610",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
-
 
 ``` {R HvL function enrichment analysis}
 #MSigDb Hallmarks
@@ -757,6 +764,7 @@ pathview(gene.data  = fc.vector, pathway.id = "hsa04670",species  = "hsa")
 
 ```
 
+
 ``` {R LOvLC function enrichment analysis}
 #MSigDb Hallmarks
 diffGenes.LOvLC <- rownames(filter(dt1, dt1$LOvLC != 0))
@@ -796,6 +804,7 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
   labs(x="Pathway", y="Normalized Enrichment Score",
        title="Hallmark pathways NES from GSEA") + 
   theme_minimal()
+ ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/LOvLC Hallmark.png", bg = "white")
 
 #Kegg
 diffGenes.LOvLC <- rownames(filter(dt1, dt1$LOvLC != 0))
@@ -826,6 +835,7 @@ dotplot(LOvLC_kk, showCategory = 10, title = "LOvLC Enriched Pathways vs Control
 edox <- setReadable(LOvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
 
 cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=LOvLC_kegg_gene_list)
+  ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/LOvLC CNET.png", bg = "white")
 ```
 
 ``` {R LOvLC pathway enrichment, warning=FALSE}
@@ -836,7 +846,7 @@ fc.vector <- as.numeric(deg_LOvLC_enrich[, 3])
 names(fc.vector) <- (deg_LOvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa05012",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04066",species  = "hsa")
 
 ```
 
@@ -880,6 +890,8 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
        title="Hallmark pathways NES from GSEA") + 
   theme_minimal()
 
+  ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/LPvLC Hallmark.png", bg = "white")
+
 #Kegg
 diffGenes.LPvLC <- rownames(filter(dt1, dt1$LPvLC != 0))
 
@@ -909,6 +921,7 @@ dotplot(LPvLC_kk, showCategory = 10, title = "LPvLC Enriched Pathways vs Control
 edox <- setReadable(LPvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
 
 cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=LPvLC_kegg_gene_list)
+  ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/LPvLC CNET.png", bg = "white")
 ```
 
 ``` {R LPvLC pathway enrichment, warning=FALSE}
@@ -921,6 +934,46 @@ de.names <- names(fc.vector)
 
 pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
 
+```
+
+```{R, LPvLO pathway enrichment analysis}
+#MSigDb Hallmarks
+diffGenes.LPvLO <- rownames(filter(dt1, dt1$LPvLO != 0))
+
+diffGenes.LPvLO <- LPvLO[LPvLO$ID %in% diffGenes.LPvLO, ] %>%
+rename("SYMBOL" = ID)
+
+diffGenes.LPvLO <- diffGenes.LPvLO %>% 
+    dplyr::select(SYMBOL, t) %>% 
+    na.omit() %>% 
+    distinct() %>% 
+    group_by(SYMBOL) %>% 
+    summarize(stat=mean(t))
+
+ranks <- deframe(diffGenes.LPvLO)
+
+# Load the pathways into a named list
+pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
+
+fgseaRes <- fgsea(pathways=pathways.hallmark, stats=ranks, nperm=1000)
+
+fgseaResTidy <- fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+# Show in a nice table:
+fgseaResTidy %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) %>% 
+  DT::datatable()
+
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="Hallmark pathways NES from GSEA") + 
+  theme_minimal()
+ ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/LPvLO Hallmark.png", bg = "white")
 ```
 
 ``` {R HCvLC function enrichment analysis}
@@ -963,6 +1016,8 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
        title="Hallmark pathways NES from GSEA") + 
   theme_minimal()
 
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/HCvLC Hallmark.png", bg = "white")
+
 #Kegg
 diffGenes.HCvLC <- rownames(filter(dt1, dt1$HCvLC != 0))
 
@@ -992,6 +1047,8 @@ dotplot(HCvLC_kk, showCategory = 10, title = "HCvLC Enriched Pathways vs Control
 edox <- setReadable(HCvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
 
 cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=HCvLC_kegg_gene_list)
+
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/HCvLC CNET.png", bg = "white")
 ```
 
 ``` {R HCvLC pathway enrichment, warning=FALSE}
@@ -1002,7 +1059,7 @@ fc.vector <- as.numeric(deg_HCvLC_enrich[, 3])
 names(fc.vector) <- (deg_HCvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
 
@@ -1046,6 +1103,8 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
        title="Hallmark pathways NES from GSEA") + 
   theme_minimal()
 
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/HOvLC Hallmark.png", bg = "white")
+
 #Kegg
 diffGenes.HOvLC <- rownames(filter(dt1, dt1$HOvLC != 0))
 
@@ -1075,6 +1134,7 @@ dotplot(HOvLC_kk, showCategory = 10, title = "HOvLC Enriched Pathways vs Control
 edox <- setReadable(HOvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
 
 cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=HOvLC_kegg_gene_list)
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/HOvLC CNET.png", bg = "white")
 ```
 
 ``` {R HOvLC pathway enrichment, warning=FALSE}
@@ -1085,7 +1145,7 @@ fc.vector <- as.numeric(deg_HOvLC_enrich[, 3])
 names(fc.vector) <- (deg_HOvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04979",species  = "hsa")
 
 ```
 
@@ -1129,6 +1189,8 @@ ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
        title="Hallmark pathways NES from GSEA") + 
   theme_minimal()
 
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/HPvLC Hallmark.png", bg = "white")
+
 #Kegg
 diffGenes.HPvLC <- rownames(filter(dt1, dt1$HPvLC != 0))
 
@@ -1158,6 +1220,7 @@ dotplot(HPvLC_kk, showCategory = 10, title = "HPvLC Enriched Pathways vs Control
 edox <- setReadable(HPvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
 
 cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=HPvLC_kegg_gene_list)
+ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Figures/HPvLC CNET.png", bg = "white")
 ```
 
 ``` {R HPvLC pathway enrichment, warning=FALSE}
@@ -1168,7 +1231,7 @@ fc.vector <- as.numeric(deg_HPvLC_enrich[, 3])
 names(fc.vector) <- (deg_HPvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04979",species  = "hsa")
 
 ```
 
