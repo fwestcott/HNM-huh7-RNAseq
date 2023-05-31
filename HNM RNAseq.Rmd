@@ -238,6 +238,8 @@ contrasts <- makeContrasts(
    HOvHC = HO - HC,
    HPvHC = HP - HC,
    HPvHO = HP - HO,
+   HOvLC = HO - LC,
+   HPvLC = HP - LC,
    levels = colnames(design))
 rownames(contrasts) <- gsub("group", "", rownames(contrasts))
 contrasts
@@ -303,10 +305,14 @@ OvC <- topTreat(tfit1, coef=1, n=Inf)
 PvC <- topTreat(tfit1, coef=2, n=Inf)
 PvO <- topTreat(tfit1, coef=3, n=Inf)
 HvL <- topTreat(tfit1, coef=4, n=Inf)
+HCvLC <- topTreat(tfit1, coef=5, n=Inf)
 LOvLC <- topTreat(tfit1, coef=8, n=Inf)
 LPvLC <- topTreat(tfit1, coef=9, n=Inf)
 HOvHC <- topTreat(tfit1, coef=11, n=Inf)
 HPvHC <- topTreat(tfit1, coef=12, n=Inf)
+HOvLC <- topTreat(tfit1, coef=14, n=Inf)
+HPvLC <- topTreat(tfit1, coef=15, n=Inf)
+
 
 # Almost exactly the same just all in one place and made to look better 
 
@@ -389,7 +395,7 @@ Avg.gene_expression.pivot <- pivot_longer(Avg.gene_expression,
 
 #  Filter for genes you want. grepl will pick out any with that phrase in it. Use " x|y|z|etc." notation to search for multiple genes. 
 graph <- Avg.gene_expression.pivot %>%
-  dplyr::filter(grepl('CASP3', geneID))
+  dplyr::filter(grepl('PEX2|PEX10|PEX12', geneID))
 
 # Graph error bars were a step too far for me as they got messed up with the facet wrap
 ggbarplot(graph, "group", "lcpm", add = "mean_se", palette = "npg", legend = "none", fill = "group", xlab = "Media", ylab = "counts per million (log2)") +
@@ -830,7 +836,7 @@ fc.vector <- as.numeric(deg_LOvLC_enrich[, 3])
 names(fc.vector) <- (deg_LOvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa00121",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa05012",species  = "hsa")
 
 ```
 
@@ -913,9 +919,259 @@ fc.vector <- as.numeric(deg_LPvLC_enrich[, 3])
 names(fc.vector) <- (deg_LPvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa00140",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
 
 ```
+
+``` {R HCvLC function enrichment analysis}
+#MSigDb Hallmarks
+diffGenes.HCvLC <- rownames(filter(dt1, dt1$HCvLC != 0))
+
+diffGenes.HCvLC <- HCvLC[HCvLC$ID %in% diffGenes.HCvLC, ] %>%
+rename("SYMBOL" = ID)
+
+diffGenes.HCvLC <- diffGenes.HCvLC %>% 
+    dplyr::select(SYMBOL, t) %>% 
+    na.omit() %>% 
+    distinct() %>% 
+    group_by(SYMBOL) %>% 
+    summarize(stat=mean(t))
+
+ranks <- deframe(diffGenes.HCvLC)
+
+# Load the pathways into a named list
+pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
+
+fgseaRes <- fgsea(pathways=pathways.hallmark, stats=ranks, nperm=1000)
+
+fgseaResTidy <- fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+# Show in a nice table:
+fgseaResTidy %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) %>% 
+  DT::datatable()
+
+fgseaResTidy <- filter(fgseaResTidy, fgseaResTidy$padj <= 0.1)
+
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="Hallmark pathways NES from GSEA") + 
+  theme_minimal()
+
+#Kegg
+diffGenes.HCvLC <- rownames(filter(dt1, dt1$HCvLC != 0))
+
+diffGenes.HCvLC <- HCvLC[HCvLC$ID %in% diffGenes.HCvLC, ] %>%
+rename("SYMBOL" = ID)
+
+entrez <- bitr(diffGenes.HCvLC$SYMBOL, fromType = "SYMBOL",
+                 toType = "ENTREZID",
+                 OrgDb="org.Hs.eg.db")
+
+deg_HCvLC_enrich <- diffGenes.HCvLC %>% left_join(entrez,.,by="SYMBOL")
+
+HCvLC_kegg_gene_list <- deg_HCvLC_enrich$logFC
+
+names(HCvLC_kegg_gene_list) <- deg_HCvLC_enrich$ENTREZID
+
+HCvLC_kegg_gene_list<-na.omit(HCvLC_kegg_gene_list)
+
+HCvLC_kegg_gene_list = sort(HCvLC_kegg_gene_list, decreasing = TRUE)
+
+HCvLC_kk <- gseKEGG(geneList     = HCvLC_kegg_gene_list,
+               organism     = "hsa")
+
+dotplot(HCvLC_kk, showCategory = 10, title = "HCvLC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
+ # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/HCvLC GSEA.png")
+
+edox <- setReadable(HCvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
+
+cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=HCvLC_kegg_gene_list)
+```
+
+``` {R HCvLC pathway enrichment, warning=FALSE}
+setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
+
+#This is the same as before
+fc.vector <- as.numeric(deg_HCvLC_enrich[, 3])
+names(fc.vector) <- (deg_HCvLC_enrich[, 2])
+de.names <- names(fc.vector)
+
+pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+
+```
+
+``` {R HOvLC function enrichment analysis}
+#MSigDb Hallmarks
+diffGenes.HOvLC <- rownames(filter(dt1, dt1$HOvLC != 0))
+
+diffGenes.HOvLC <- HOvLC[HOvLC$ID %in% diffGenes.HOvLC, ] %>%
+rename("SYMBOL" = ID)
+
+diffGenes.HOvLC <- diffGenes.HOvLC %>% 
+    dplyr::select(SYMBOL, t) %>% 
+    na.omit() %>% 
+    distinct() %>% 
+    group_by(SYMBOL) %>% 
+    summarize(stat=mean(t))
+
+ranks <- deframe(diffGenes.HOvLC)
+
+# Load the pathways into a named list
+pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
+
+fgseaRes <- fgsea(pathways=pathways.hallmark, stats=ranks, nperm=1000)
+
+fgseaResTidy <- fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+# Show in a nice table:
+fgseaResTidy %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) %>% 
+  DT::datatable()
+
+fgseaResTidy <- filter(fgseaResTidy, fgseaResTidy$padj <= 0.1)
+
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="Hallmark pathways NES from GSEA") + 
+  theme_minimal()
+
+#Kegg
+diffGenes.HOvLC <- rownames(filter(dt1, dt1$HOvLC != 0))
+
+diffGenes.HOvLC <- HOvLC[HOvLC$ID %in% diffGenes.HOvLC, ] %>%
+rename("SYMBOL" = ID)
+
+entrez <- bitr(diffGenes.HOvLC$SYMBOL, fromType = "SYMBOL",
+                 toType = "ENTREZID",
+                 OrgDb="org.Hs.eg.db")
+
+deg_HOvLC_enrich <- diffGenes.HOvLC %>% left_join(entrez,.,by="SYMBOL")
+
+HOvLC_kegg_gene_list <- deg_HOvLC_enrich$logFC
+
+names(HOvLC_kegg_gene_list) <- deg_HOvLC_enrich$ENTREZID
+
+HOvLC_kegg_gene_list<-na.omit(HOvLC_kegg_gene_list)
+
+HOvLC_kegg_gene_list = sort(HOvLC_kegg_gene_list, decreasing = TRUE)
+
+HOvLC_kk <- gseKEGG(geneList     = HOvLC_kegg_gene_list,
+               organism     = "hsa")
+
+dotplot(HOvLC_kk, showCategory = 10, title = "HOvLC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
+ # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/HOvLC GSEA.png")
+
+edox <- setReadable(HOvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
+
+cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=HOvLC_kegg_gene_list)
+```
+
+``` {R HOvLC pathway enrichment, warning=FALSE}
+setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
+
+#This is the same as before
+fc.vector <- as.numeric(deg_HOvLC_enrich[, 3])
+names(fc.vector) <- (deg_HOvLC_enrich[, 2])
+de.names <- names(fc.vector)
+
+pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+
+```
+
+``` {R HPvLC function enrichment analysis}
+#MSigDb Hallmarks
+diffGenes.HPvLC <- rownames(filter(dt1, dt1$HPvLC != 0))
+
+diffGenes.HPvLC <- HPvLC[HPvLC$ID %in% diffGenes.HPvLC, ] %>%
+rename("SYMBOL" = ID)
+
+diffGenes.HPvLC <- diffGenes.HPvLC %>% 
+    dplyr::select(SYMBOL, t) %>% 
+    na.omit() %>% 
+    distinct() %>% 
+    group_by(SYMBOL) %>% 
+    summarize(stat=mean(t))
+
+ranks <- deframe(diffGenes.HPvLC)
+
+# Load the pathways into a named list
+pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
+
+fgseaRes <- fgsea(pathways=pathways.hallmark, stats=ranks, nperm=1000)
+
+fgseaResTidy <- fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+# Show in a nice table:
+fgseaResTidy %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) %>% 
+  DT::datatable()
+
+fgseaResTidy <- filter(fgseaResTidy, fgseaResTidy$padj <= 0.1)
+
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="Hallmark pathways NES from GSEA") + 
+  theme_minimal()
+
+#Kegg
+diffGenes.HPvLC <- rownames(filter(dt1, dt1$HPvLC != 0))
+
+diffGenes.HPvLC <- HPvLC[HPvLC$ID %in% diffGenes.HPvLC, ] %>%
+rename("SYMBOL" = ID)
+
+entrez <- bitr(diffGenes.HPvLC$SYMBOL, fromType = "SYMBOL",
+                 toType = "ENTREZID",
+                 OrgDb="org.Hs.eg.db")
+
+deg_HPvLC_enrich <- diffGenes.HPvLC %>% left_join(entrez,.,by="SYMBOL")
+
+HPvLC_kegg_gene_list <- deg_HPvLC_enrich$logFC
+
+names(HPvLC_kegg_gene_list) <- deg_HPvLC_enrich$ENTREZID
+
+HPvLC_kegg_gene_list<-na.omit(HPvLC_kegg_gene_list)
+
+HPvLC_kegg_gene_list = sort(HPvLC_kegg_gene_list, decreasing = TRUE)
+
+HPvLC_kk <- gseKEGG(geneList     = HPvLC_kegg_gene_list,
+               organism     = "hsa")
+
+dotplot(HPvLC_kk, showCategory = 10, title = "HPvLC Enriched Pathways vs Control" , split=".sign") + facet_grid(.~.sign)
+ # ggsave("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/OPLA-POLA-Primary-RNAseq/HPvLC GSEA.png")
+
+edox <- setReadable(HPvLC_kk, 'org.Hs.eg.db', 'ENTREZID')
+
+cnetplot(edox, categorySize="pvalue", node_label="category", showCategory = 10, cex_label_gene = 0.4, cex_label_category = 0.7, max.overlaps = 100, foldChange=HPvLC_kegg_gene_list)
+```
+
+``` {R HPvLC pathway enrichment, warning=FALSE}
+setwd("C:/Users/fwestcott/OneDrive - Nexus365/Desktop/Results/HNM-huh7-RNAseq/Pathview")
+
+#This is the same as before
+fc.vector <- as.numeric(deg_HPvLC_enrich[, 3])
+names(fc.vector) <- (deg_HPvLC_enrich[, 2])
+de.names <- names(fc.vector)
+
+pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+
+```
+
 
 ``` {R HOvHC function enrichment analysis}
 #MSigDb Hallmarks
@@ -996,7 +1252,7 @@ fc.vector <- as.numeric(deg_HOvHC_enrich[, 3])
 names(fc.vector) <- (deg_HOvHC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04933",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04657",species  = "hsa")
 
 ```
 
@@ -1079,6 +1335,6 @@ fc.vector <- as.numeric(deg_HPvHC_enrich[, 3])
 names(fc.vector) <- (deg_HPvHC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04014",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
