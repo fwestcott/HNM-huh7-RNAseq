@@ -846,7 +846,7 @@ fc.vector <- as.numeric(deg_LOvLC_enrich[, 3])
 names(fc.vector) <- (deg_LOvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04066",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
 
@@ -932,7 +932,7 @@ fc.vector <- as.numeric(deg_LPvLC_enrich[, 3])
 names(fc.vector) <- (deg_LPvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04141",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
 
@@ -1145,7 +1145,7 @@ fc.vector <- as.numeric(deg_HOvLC_enrich[, 3])
 names(fc.vector) <- (deg_HOvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04979",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
 
@@ -1231,10 +1231,49 @@ fc.vector <- as.numeric(deg_HPvLC_enrich[, 3])
 names(fc.vector) <- (deg_HPvLC_enrich[, 2])
 de.names <- names(fc.vector)
 
-pathview(gene.data  = fc.vector, pathway.id = "hsa04979",species  = "hsa")
+pathview(gene.data  = fc.vector, pathway.id = "hsa04060",species  = "hsa")
 
 ```
 
+```{R HPvHO pathway enrichment analysis}
+#MSigDb Hallmarks
+diffGenes.HPvHO <- rownames(filter(dt1, dt1$HPvHO != 0))
+
+diffGenes.HPvHO <- HPvHO[HPvHO$ID %in% diffGenes.HPvHO, ] %>%
+rename("SYMBOL" = ID)
+
+diffGenes.HPvHO <- diffGenes.HPvHO %>% 
+    dplyr::select(SYMBOL, t) %>% 
+    na.omit() %>% 
+    distinct() %>% 
+    group_by(SYMBOL) %>% 
+    summarize(stat=mean(t))
+
+ranks <- deframe(diffGenes.HPvHO)
+
+# Load the pathways into a named list
+pathways.hallmark <- gmtPathways("h.all.v2023.1.Hs.symbols.gmt")
+
+fgseaRes <- fgsea(pathways=pathways.hallmark, stats=ranks, nperm=1000)
+
+fgseaResTidy <- fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+# Show in a nice table:
+fgseaResTidy %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  arrange(padj) %>% 
+  DT::datatable()
+
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="Hallmark pathways NES from GSEA") + 
+  theme_minimal()
+
+```
 
 ``` {R HOvHC function enrichment analysis}
 #MSigDb Hallmarks
